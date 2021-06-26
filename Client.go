@@ -12,7 +12,7 @@ import (
 */
 func main() {
 	// 1 直接连接远程服务器，得到一个conn连接
-	conn, err := net.Dial("tcp4", "127.0.0.1:8999")
+	conn, err := net.Dial("tcp4", "127.0.0.1:8899")
 	if err != nil {
 		log.Fatal(err)
 		return
