@@ -1,7 +1,6 @@
 package znet
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"zinx/ziface"
@@ -17,6 +16,8 @@ type Server struct {
 	IP string
 	// 服务器监听的端口
 	Port int
+	// 当前server由用户绑定的回调router，也就是server注册的链接对应的处理业务
+	Router ziface.IRouter
 }
 
 /*
@@ -28,25 +29,15 @@ func NewServer(name string) ziface.Iserver {
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      8999,
+		Router:    nil,
 	}
 	return s
-}
-
-// 定义当前客户端链接的handle api
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	//回显业务
-	fmt.Println("[Conn Handle] CallBackToClient...")
-	_, err := conn.Write(data[:cnt])
-	if err != nil {
-		fmt.Println("write back buf err", err)
-		return errors.New("CallBackToClient error")
-	}
-	return nil
 }
 
 // 开启网络服务
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listenner at Ip:%s ,Port :%d is starting\n", s.IP, s.Port)
+	// 开启一个gorouter去做服务端Lisenter业务
 	go func() {
 		// 1 获取一个TCP的Addr
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
@@ -62,8 +53,7 @@ func (s *Server) Start() {
 		fmt.Println("start Zinx server succ,", s.Name, "succ,Listenning....")
 		// 3 阻塞的等待客户端连接，处理客户端连接业务
 		// TODO server.go 应该应该有一个自动生成ID的方法
-		var cid uint32
-		cid = 0
+		var cid uint32 = 0
 		for {
 			// 如果有客户端链接过来，阻塞会返回
 			conn, err := listener.AcceptTCP()
@@ -72,7 +62,7 @@ func (s *Server) Start() {
 				continue
 			}
 			//已经与客户端建立连接，做一些业务，做一个最基本的512字节长度的回写业务
-			clientConn := NewConnection(conn, cid, CallBackToClient)
+			clientConn := NewConnection(conn, cid, s.Router)
 			cid++
 			// 3.4 启动当前链接处理的业务
 			go clientConn.Start()
@@ -90,4 +80,8 @@ func (s *Server) Serve() {
 	// TODO 做一些启动服务器之后的额外业务
 	// 阻塞状态
 	select {}
+}
+
+func (s *Server) AddRouter(r ziface.IRouter) {
+	s.Router = r
 }
