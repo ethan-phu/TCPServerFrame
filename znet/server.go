@@ -1,6 +1,7 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"zinx/ziface"
@@ -30,6 +31,20 @@ func NewServer(name string) ziface.Iserver {
 	}
 	return s
 }
+
+// 定义当前客户端链接的handle api
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	//回显业务
+	fmt.Println("[Conn Handle] CallBackToClient...")
+	_, err := conn.Write(data[:cnt])
+	if err != nil {
+		fmt.Println("write back buf err", err)
+		return errors.New("CallBackToClient error")
+	}
+	return nil
+}
+
+// 开启网络服务
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listenner at Ip:%s ,Port :%d is starting\n", s.IP, s.Port)
 	go func() {
@@ -46,6 +61,9 @@ func (s *Server) Start() {
 		}
 		fmt.Println("start Zinx server succ,", s.Name, "succ,Listenning....")
 		// 3 阻塞的等待客户端连接，处理客户端连接业务
+		// TODO server.go 应该应该有一个自动生成ID的方法
+		var cid uint32
+		cid = 0
 		for {
 			// 如果有客户端链接过来，阻塞会返回
 			conn, err := listener.AcceptTCP()
@@ -54,28 +72,17 @@ func (s *Server) Start() {
 				continue
 			}
 			//已经与客户端建立连接，做一些业务，做一个最基本的512字节长度的回写业务
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("recv buf err", err)
-						continue
-					}
-					_, err = conn.Write(buf[:cnt])
-					//回显功能
-					if err != nil {
-						fmt.Println("wirte back buf err", err)
-						continue
-					}
-				}
-			}()
+			clientConn := NewConnection(conn, cid, CallBackToClient)
+			cid++
+			// 3.4 启动当前链接处理的业务
+			go clientConn.Start()
 		}
 	}()
 }
 
 func (s *Server) Stop() {
 	// TODO 将一些服务器的资源，状态，或者一些已经开辟的连接信息 进行停止或者回收
+	fmt.Println("[STOP] zinx server,name", s.Name)
 }
 func (s *Server) Serve() {
 	// 启动server的服务功能
