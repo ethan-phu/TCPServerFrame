@@ -11,23 +11,13 @@ type PingRouter struct {
 	znet.BaseRouter // 一定要先基础BaseRouter
 }
 
-func (router *PingRouter) PreHandle(request ziface.IRequest) {
-	fmt.Println("call Router PreHandle")
-	_, err := request.Getconnection().GetTCPConnection().Write([]byte("before ping ....\n"))
-	if err != nil {
-		fmt.Println("call back ping ping error", err)
-	}
-}
 func (router *PingRouter) Handle(request ziface.IRequest) {
-	fmt.Println("call Router Handle")
-	_, err := request.Getconnection().GetTCPConnection().Write([]byte("now ping ....\n"))
-	if err != nil {
-		fmt.Println("call back ping ping error", err)
-	}
-}
-func (router *PingRouter) PostHandle(request ziface.IRequest) {
-	fmt.Println("call Router PostHandle")
-	_, err := request.Getconnection().GetTCPConnection().Write([]byte("after ping ....\n"))
+	// 先读取客户端发送过来的数据
+	fmt.Println("Call PingRouter Handle")
+	//先读取客户端的数据，再回写ping...ping...ping
+	fmt.Println("recv from client : msgId=", request.GetMsgID(), ", data=", string(request.GetData()))
+	fmt.Println("call Router PreHandle")
+	err := request.Getconnection().SendMsg(1, []byte("before ping ping ping"))
 	if err != nil {
 		fmt.Println("call back ping ping error", err)
 	}
