@@ -7,4 +7,5 @@ IRequest 接口
 type IRequest interface {
 	Getconnection() Iconnetction //获取链接请求信息
 	GetData() []byte             // 获取请求消息的数据
+	GetMsgID() uint32            // 获取请求数据的ID
 }

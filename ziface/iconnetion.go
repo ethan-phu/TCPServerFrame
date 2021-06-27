@@ -14,6 +14,8 @@ type Iconnetction interface {
 	GetConnID() uint32
 	// 获取远程客户端的TCP状态IP port
 	RemoteAddr() net.Addr
+	// 直接将message数据发送数据给远程TCP客户端
+	SendMsg(msgId uint32, data []byte) error
 }
 
 //定义一个处理链接业务的方法
