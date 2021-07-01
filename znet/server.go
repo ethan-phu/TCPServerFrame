@@ -18,7 +18,7 @@ type Server struct {
 	// 服务器监听的端口
 	Port int
 	// 当前server由用户绑定的回调router，也就是server注册的链接对应的处理业务
-	Router ziface.IRouter
+	MsgHandler ziface.IMessageHandle
 }
 
 /*
@@ -26,14 +26,13 @@ type Server struct {
 */
 func NewServer() ziface.Iserver {
 	utils.GlobalObject.Reload()
-	s := &Server{
-		Name:      utils.GlobalObject.Name,
-		IPVersion: "tcp4",
-		IP:        utils.GlobalObject.Host,
-		Port:      utils.GlobalObject.TcpPort,
-		Router:    nil,
+	return &Server{
+		Name:       utils.GlobalObject.Name,
+		IPVersion:  "tcp4",
+		IP:         utils.GlobalObject.Host,
+		Port:       utils.GlobalObject.TcpPort,
+		MsgHandler: NewMsgHandle(),
 	}
-	return s
 }
 
 // 开启网络服务
@@ -64,7 +63,7 @@ func (s *Server) Start() {
 				continue
 			}
 			//已经与客户端建立连接，做一些业务，做一个最基本的512字节长度的回写业务
-			clientConn := NewConnection(conn, cid, s.Router)
+			clientConn := NewConnection(conn, cid, s.MsgHandler)
 			cid++
 			// 3.4 启动当前链接处理的业务
 			go clientConn.Start()
@@ -84,6 +83,7 @@ func (s *Server) Serve() {
 	select {}
 }
 
-func (s *Server) AddRouter(r ziface.IRouter) {
-	s.Router = r
+func (s *Server) AddRouter(msgId uint32, router ziface.IRouter) {
+	// 为每一个msgId 增加一个router
+	s.MsgHandler.AddRouter(msgId, router)
 }
